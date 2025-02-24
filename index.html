@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BizTrack - Business Management Solution</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #f8fafc;
+        }
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #3498db;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="min-h-screen">
+        <!-- Navigation -->
+        <nav class="bg-white shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex">
+                        <div class="flex-shrink-0 flex items-center">
+                            <h1 class="text-xl font-bold text-blue-600">BizTrack</h1>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <button @click="toggleSync" class="p-2 rounded-md text-gray-400 hover:text-gray-500">
+                            <i class="bi" :class="[isOnline ? 'bi-cloud-check-fill text-green-500' : 'bi-cloud-slash text-red-500']"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Quick Actions -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <button @click="activeView = 'invoices'" class="p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                    <i class="bi bi-receipt text-2xl text-blue-500"></i>
+                    <p class="mt-2 text-sm font-medium">Invoices</p>
+                </button>
+                <button @click="activeView = 'inventory'" class="p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                    <i class="bi bi-box-seam text-2xl text-green-500"></i>
+                    <p class="mt-2 text-sm font-medium">Inventory</p>
+                </button>
+                <button @click="activeView = 'customers'" class="p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                    <i class="bi bi-people text-2xl text-purple-500"></i>
+                    <p class="mt-2 text-sm font-medium">Customers</p>
+                </button>
+                <button @click="activeView = 'reports'" class="p-4 bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow">
+                    <i class="bi bi-graph-up text-2xl text-orange-500"></i>
+                    <p class="mt-2 text-sm font-medium">Reports</p>
+                </button>
+            </div>
+
+            <!-- Dynamic Content -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <!-- Invoices View -->
+                <div v-if="activeView === 'invoices'">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-lg font-semibold">Invoices</h2>
+                        <button @click="createNewInvoice" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700">
+                            New Invoice
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full">
+                            <thead>
+                                <tr class="border-b">
+                                    <th class="text-left py-3 px-4">Invoice #</th>
+                                    <th class="text-left py-3 px-4">Customer</th>
+                                    <th class="text-left py-3 px-4">Amount</th>
+                                    <th class="text-left py-3 px-4">Status</th>
+                                    <th class="text-left py-3 px-4">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="invoice in invoices" :key="invoice.id" class="border-b">
+                                    <td class="py-3 px-4">{{invoice.number}}</td>
+                                    <td class="py-3 px-4">{{invoice.customer}}</td>
+                                    <td class="py-3 px-4">₹{{invoice.amount}}</td>
+                                    <td class="py-3 px-4">
+                                        <span :class="getStatusClass(invoice.status)">
+                                            {{invoice.status}}
+                                        </span>
+                                    </td>
+                                    <td class="py-3 px-4">
+                                        <button class="text-blue-600 hover:text-blue-800 mr-2">
+                                            <i class="bi bi-eye"></i>
+                                        </button>
+                                        <button class="text-green-600 hover:text-green-800">
+                                            <i class="bi bi-download"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Inventory View -->
+                <div v-if="activeView === 'inventory'">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-lg font-semibold">Inventory</h2>
+                        <button @click="addItem" class="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">
+                            Add Item
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div v-for="item in inventory" :key="item.id" 
+                             class="border rounded-lg p-4 relative">
+                            <div class="absolute top-2 right-2">
+                                <span :class="getLowStockClass(item.quantity)" 
+                                      class="px-2 py-1 rounded-full text-xs">
+                                    {{item.quantity}} in stock
+                                </span>
+                            </div>
+                            <h3 class="font-medium">{{item.name}}</h3>
+                            <p class="text-gray-600 text-sm">SKU: {{item.sku}}</p>
+                            <p class="text-gray-800 font-medium mt-2">₹{{item.price}}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Customers View -->
+                <div v-if="activeView === 'customers'">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-lg font-semibold">Customers</h2>
+                        <button @click="addCustomer" class="bg-purple-600 text-white px-4 py-2 rounded-md hover:bg-purple-700">
+                            Add Customer
+                        </button>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div v-for="customer in customers" :key="customer.id" 
+                             class="border rounded-lg p-4">
+                            <div class="flex items-center mb-2">
+                                <div class="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center">
+                                    <i class="bi bi-person text-purple-600"></i>
+                                </div>
+                                <div class="ml-3">
+                                    <h3 class="font-medium">{{customer.name}}</h3>
+                                    <p class="text-gray-600 text-sm">{{customer.phone}}</p>
+                                </div>
+                            </div>
+                            <p class="text-gray-600 text-sm">{{customer.email}}</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reports View -->
+                <div v-if="activeView === 'reports'">
+                    <div class="mb-6">
+                        <h2 class="text-lg font-semibold">Reports</h2>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="border rounded-lg p-4">
+                            <h3 class="font-medium mb-4">Sales Overview</h3>
+                            <div class="h-40 bg-gray-50 rounded flex items-center justify-center">
+                                <p class="text-gray-500">Sales Chart Placeholder</p>
+                            </div>
+                        </div>
+                        <div class="border rounded-lg p-4">
+                            <h3 class="font-medium mb-4">Inventory Status</h3>
+                            <div class="h-40 bg-gray-50 rounded flex items-center justify-center">
+                                <p class="text-gray-500">Inventory Chart Placeholder</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const { createApp } = Vue
+
+        createApp({
+            data() {
+                return {
+                    activeView: 'invoices',
+                    isOnline: true,
+                    invoices: [
+                        { id: 1, number: 'INV-001', customer: 'John Doe', amount: '1,500', status: 'Paid' },
+                        { id: 2, number: 'INV-002', customer: 'Jane Smith', amount: '2,300', status: 'Pending' },
+                        { id: 3, number: 'INV-003', customer: 'Bob Johnson', amount: '3,400', status: 'Overdue' }
+                    ],
+                    inventory: [
+                        { id: 1, name: 'Product A', sku: 'SKU001', price: '500', quantity: 5 },
+                        { id: 2, name: 'Product B', sku: 'SKU002', price: '750', quantity: 15 },
+                        { id: 3, name: 'Product C', sku: 'SKU003', price: '1,000', quantity: 3 }
+                    ],
+                    customers: [
+                        { id: 1, name: 'John Doe', phone: '+91 9876543210', email: 'john@example.com' },
+                        { id: 2, name: 'Jane Smith', phone: '+91 9876543211', email: 'jane@example.com' },
+                        { id: 3, name: 'Bob Johnson', phone: '+91 9876543212', email: 'bob@example.com' }
+                    ]
+                }
+            },
+            methods: {
+                toggleSync() {
+                    this.isOnline = !this.isOnline
+                },
+                getStatusClass(status) {
+                    const classes = {
+                        'Paid': 'bg-green-100 text-green-800',
+                        'Pending': 'bg-yellow-100 text-yellow-800',
+                        'Overdue': 'bg-red-100 text-red-800'
+                    }
+                    return `${classes[status]} px-2 py-1 rounded-full text-xs`
+                },
+                getLowStockClass(quantity) {
+                    return quantity <= 5 ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800'
+                },
+                createNewInvoice() {
+                    // Implement invoice creation logic
+                    alert('New Invoice Creation Dialog')
+                },
+                addItem() {
+                    // Implement item addition logic
+                    alert('Add Inventory Item Dialog')
+                },
+                addCustomer() {
+                    // Implement customer addition logic
+                    alert('Add Customer Dialog')
+                }
+            }
+        }).mount('#app')
+    </script>
+<script>document.body.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); return }, { passive: false })</script>
+	</body>
+</html>
